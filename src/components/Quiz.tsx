@@ -2,28 +2,45 @@ import React, { useState } from 'react'
 import './Quiz.css'
 import QuizQuestion from '../core/QuizQuestion';
 
+import QuizCore from '../core/QuizCore';
+
+// interface QuizState {
+//   questions: QuizQuestion[]
+//   currentQuestionIndex: number
+//   selectedAnswer: string | null
+//   score: number
+// }
+
 interface QuizState {
-  questions: QuizQuestion[]
-  currentQuestionIndex: number
+  currentQuestion: QuizQuestion | null
   selectedAnswer: string | null
   score: number
+  quizCompleted: boolean
 }
 
 const Quiz: React.FC = () => {
-  const initialQuestions: QuizQuestion[] = [
-    {
-      question: 'What is the capital of France?',
-      options: ['London', 'Berlin', 'Paris', 'Madrid'],
-      correctAnswer: 'Paris',
-    },
-  ];
-  const [state, setState] = useState<QuizState>({
-    questions: initialQuestions,
-    currentQuestionIndex: 0,  // Initialize the current question index.
-    selectedAnswer: null,  // Initialize the selected answer.
-    score: 0,  // Initialize the score.
-  });
+  // const initialQuestions: QuizQuestion[] = [
+  //   {
+  //     question: 'What is the capital of France?',
+  //     options: ['London', 'Berlin', 'Paris', 'Madrid'],
+  //     correctAnswer: 'Paris',
+  //   },
+  // ];
 
+  const [quizCore, _] = useState<QuizCore>(new QuizCore());
+
+  const [state, setState] = useState<QuizState>({
+    // questions: initialQuestions,
+    // currentQuestionIndex: 0,  // Initialize the current question index.
+    // selectedAnswer: null,  // Initialize the selected answer.
+    // score: 0,  // Initialize the score.
+
+    currentQuestion: quizCore.getCurrentQuestion(),
+    selectedAnswer: null,
+    score: 0,  // Initialize the score.
+    quizCompleted: false // Initizlize quiz complete flag
+  });
+  
   const handleOptionSelect = (option: string): void => {
     setState((prevState) => ({ ...prevState, selectedAnswer: option }));
   }
@@ -31,16 +48,40 @@ const Quiz: React.FC = () => {
 
   const handleButtonClick = (): void => {
     // Task3: Implement the logic for button click, such as moving to the next question.
-  } 
+    const { currentQuestion, selectedAnswer } = state;
+    if (selectedAnswer != null) {
+      quizCore.answerQuestion(selectedAnswer);
 
-  const { questions, currentQuestionIndex, selectedAnswer, score } = state;
-  const currentQuestion = questions[currentQuestionIndex];
+      if (quizCore.hasNextQuestion()) {
+        quizCore.nextQuestion();
+        setState({
+          currentQuestion: quizCore.getCurrentQuestion(),
+          selectedAnswer: null,
+          score: quizCore.getScore(),
+          quizCompleted: false
+        });
+      } else {
+        setState({
+          ...state,
+          quizCompleted: true,
+          score: quizCore.getScore()
+        });
+      } 
+    }
+  }
+  
 
-  if (!currentQuestion) {
+  // const { questions, currentQuestionIndex, selectedAnswer, score } = state;
+  // const currentQuestion = questions[currentQuestionIndex];
+
+  const { currentQuestion, selectedAnswer, score, quizCompleted } = state;
+
+  if (quizCompleted) {
+  //if (!currentQuestion) {
     return (
       <div>
         <h2>Quiz Completed</h2>
-        <p>Final Score: {score} out of {questions.length}</p>
+        <p>Final Score: {score} out of {quizCore.getTotalQuestions()}</p>
       </div>
     );
   }
@@ -48,11 +89,11 @@ const Quiz: React.FC = () => {
   return (
     <div>
       <h2>Quiz Question:</h2>
-      <p>{currentQuestion.question}</p>
-    
+      <p>{currentQuestion?.question}</p>
+
       <h3>Answer Options:</h3>
       <ul>
-        {currentQuestion.options.map((option) => (
+        {currentQuestion?.options.map((option) => (
           <li
             key={option}
             onClick={() => handleOptionSelect(option)}
@@ -66,7 +107,9 @@ const Quiz: React.FC = () => {
       <h3>Selected Answer:</h3>
       <p>{selectedAnswer ?? 'No answer selected'}</p>
 
-      <button onClick={handleButtonClick}>Next Question</button>
+      <button onClick={handleButtonClick}>
+        {quizCore.hasNextQuestion() ? 'Next Question' : 'Submit'}
+      </button>
     </div>
   );
 };
